@@ -18,14 +18,14 @@ public class IntegralCalculator implements Runnable{
     private ExecutorService executorService = Executors.newCachedThreadPool();
 
     public double calculateIntegralFrom0To1() throws InterruptedException, ExecutionException {
-        return calculateIntegralWithTollerance(0,1);
+        return calculateIntegralWithTolerance(0,1);
     }
 
     public void writeMessage(int percent){
         System.out.println("Progress: " + percent + "%");
     }
 
-    private double calculateIntegralWithTollerance(double a, double b) throws InterruptedException, ExecutionException {
+    private double calculateIntegralWithTolerance(double a, double b) throws InterruptedException, ExecutionException {
         double integral = 0.0;
         double previous;
         int n = 1;
