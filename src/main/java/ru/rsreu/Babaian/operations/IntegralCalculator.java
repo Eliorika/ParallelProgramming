@@ -15,7 +15,7 @@ public class IntegralCalculator implements Runnable{
 
     @Getter
     private double elapsedTimeSeconds;
-    private ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     public double calculateIntegralFrom0To1() throws InterruptedException, ExecutionException {
         return calculateIntegralWithTolerance(0,1);
@@ -93,7 +93,7 @@ public class IntegralCalculator implements Runnable{
         } catch (InterruptedException e) {
             System.out.println("Thread is interrupted manually");
         } catch (Exception e){
-            System.out.println("Thread id interrupted");
+            System.out.println("Thread is interrupted");
         }
     }
 }

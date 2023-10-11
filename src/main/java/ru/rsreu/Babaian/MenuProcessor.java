@@ -1,9 +1,5 @@
 package ru.rsreu.Babaian;
 
-import ru.rsreu.Babaian.commands.ICommand;
-
-import java.util.Scanner;
-
 public class MenuProcessor {
 
 

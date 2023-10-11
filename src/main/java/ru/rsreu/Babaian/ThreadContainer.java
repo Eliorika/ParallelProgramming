@@ -1,9 +1,7 @@
 package ru.rsreu.Babaian;
 
-import lombok.Getter;
 import ru.rsreu.Babaian.operations.IntegralCalculator;
 
-import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
 

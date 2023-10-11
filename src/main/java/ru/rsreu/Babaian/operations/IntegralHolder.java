@@ -11,5 +11,19 @@ public class IntegralHolder {
         return LazyHolder.INSTANCE;
     }
 
+    public void containValue(double val){
+        synchronized (this){
+            this.integral = val;
+        }
+
+    }
+
+    public double getValue(){
+        synchronized (this){
+            return this.integral;
+        }
+
+    }
+
 
 }

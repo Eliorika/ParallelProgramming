@@ -1,7 +1,5 @@
 package ru.rsreu.Babaian.commands;
 
-import ru.rsreu.Babaian.ThreadContainer;
-
 public class ExitCommand implements ICommand {
 
     @Override
