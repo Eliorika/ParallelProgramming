@@ -1,6 +1,6 @@
 package ru.rsreu.Babaian;
 
-import ru.rsreu.Babaian.operations.IntegralCalculator;
+import ru.rsreu.Babaian.operations.IntegralCalculatorTolerance;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,8 +18,8 @@ public class ThreadContainer {
         return false;
     }
 
-    public static String startThread(IntegralCalculator integralCalculator){
-        Thread th = new Thread(integralCalculator);
+    public static String startThread(IntegralCalculatorTolerance integralCalculatorTolerance){
+        Thread th = new Thread(integralCalculatorTolerance);
         th.setName(String.valueOf(id));
         th.start();
         threads.put(th.getName(),  th);

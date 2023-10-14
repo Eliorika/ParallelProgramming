@@ -1,7 +1,15 @@
 package ru.rsreu.Babaian.operations;
 
 public class IntegralHolder {
-    private double integral;
+    private volatile double integral = 0;
+    private volatile double progress = 0;
+    private volatile double h = 5;
+
+    private final Object obj = new Object();
+
+    private IntegralHolder(){
+        System.out.println("Holder created!");
+    }
 
     private static class LazyHolder{
         static final IntegralHolder INSTANCE = new IntegralHolder();
@@ -11,18 +19,32 @@ public class IntegralHolder {
         return LazyHolder.INSTANCE;
     }
 
-    public void containValue(double val){
+    public void addValue(double val){
         synchronized (this){
-            this.integral = val;
+            this.integral += val;
+            this.notify();
         }
 
     }
 
-    public double getValue(){
+    public void addProg(double val){
         synchronized (this){
+            this.progress += val;
+            if (progress > h){
+                System.out.println(progress);
+                h+=5;
+            }
+
+        }
+    }
+
+    public double getIntegral() throws InterruptedException {
+
+        synchronized (obj){
+            while(this.integral == 0.0)
+                this.wait();
             return this.integral;
         }
-
     }
 
 

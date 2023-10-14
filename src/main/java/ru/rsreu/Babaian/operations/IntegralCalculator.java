@@ -1,99 +1,77 @@
 package ru.rsreu.Babaian.operations;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
-@RequiredArgsConstructor
 public class IntegralCalculator implements Runnable{
-    private final double tolerance;
-    private final int messages = 20;
-
     @Getter
     private double elapsedTimeSeconds;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private volatile Integer progress = 5;
 
-    public double calculateIntegralFrom0To1() throws InterruptedException, ExecutionException {
-        return calculateIntegralWithTolerance(0,1);
-    }
-
-    public void writeMessage(int percent){
-        System.out.println("Progress: " + percent + "%");
-    }
-
-    private double calculateIntegralWithTolerance(double a, double b) throws InterruptedException, ExecutionException {
-        double integral = 0.0;
-        double previous;
-        int n = 1;
-        Future<Double> integral1 = calculateIntegralFuture(a, b, n);
-        n*=2;
-        Future<Double> integral2 = calculateIntegralFuture(a, b, n);
-
-
-        double progressStep = Math.pow(this.tolerance, 1.0/this.messages);
-        double progressBorder = progressStep;
-        int percent = 0;
-        int percentStep = 100/this.messages;
-        writeMessage(percent);
-
+    public double calculateIntegralParallel(double a, double b, int count) throws InterruptedException {
+        int n = 1073741824;
         long startTime = System.nanoTime();
+        double h = (b - a) / n;
+        int hn = 1073741824 / count;
+        double hprog = 100.0/n;
 
-        do {
-            if (Thread.currentThread().isInterrupted()) {
-                throw new InterruptedException();
-            }
+        for (int i = 0; i < count; i++) {
+            if(i != count-1)
+                calculateIntegralPartFuture(h, i*hn, (i+1)*hn, a, hprog);
+            else
+                calculateIntegralPartFuture(h, i*hn, n, a, hprog);
+        }
 
-            previous = integral;
+        executorService.shutdown();
+        while (!executorService.isTerminated()){
 
-            integral = integral1.get();
-            integral1 = integral2;
-            n *= 2;
-            integral2 = calculateIntegralFuture(a, b, n);
+        }
 
-
-            if (progressBorder > Math.abs(integral - previous)) {
-                percent+=percentStep;
-                while (progressBorder * progressStep > Math.abs(integral - previous)) {
-                    progressBorder *= progressStep;
-                    percent+=percentStep;
-                }
-                writeMessage(percent);
-                progressBorder *= progressStep;
-            }
-        } while (Math.abs(integral - previous) >= tolerance);
-
+        double result = (h / 2.0) * (Math.sin(a) * a + Math.sin(b) * b + 2.0 * IntegralHolder.getInstance().getIntegral());
         long endTime = System.nanoTime();
         this.elapsedTimeSeconds = (endTime - startTime) / 1e9;
-        return integral;
+        return result;
     }
 
-    private Future<Double> calculateIntegralFuture(double a, double b, int n){
-        return executorService.submit(() -> calculateIntegral(a, b, n));
-    }
-
-    private double calculateIntegral(double a, double b, int n){
-        double h = (b - a) / n;
+    private void calculateIntegralPart(double h, int from, int to, double a, double prog) throws InterruptedException {
         double sum = 0.0;
-        for (int i = 1; i < n; i++) {
+        for (int i = from; i < to; i++) {
             double x = a + i * h;
             sum += Math.sin(x) * x;
+            IntegralHolder.getInstance().addProg(prog);
+
         }
-        return (h / 2.0) * (Math.sin(a) * a + Math.sin(b) * b + 2.0 * sum);
+
+        IntegralHolder.getInstance().addValue(sum);
+    }
+
+    private void border(){
+        synchronized (this){
+            this.progress+=5;
+        }
+    }
+
+    private Integer getBorder(){
+        synchronized (this){
+            return this.progress;
+        }
+    }
+
+    private void calculateIntegralPartFuture(double h, int from, int to, double a, double prog){
+        executorService.execute(()-> {
+            try {
+                calculateIntegralPart(h, from, to, a, prog);
+            } catch (InterruptedException e) {
+                System.out.println("Thread is interrupted!");
+            }
+        });
     }
 
     @Override
     public void run() {
-        try {
-            double answer = calculateIntegralFrom0To1();
-            System.out.println("Answer: " + answer);
-        } catch (InterruptedException e) {
-            System.out.println("Thread is interrupted manually");
-        } catch (Exception e){
-            System.out.println("Thread is interrupted");
-        }
+
     }
 }

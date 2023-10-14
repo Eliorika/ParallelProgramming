@@ -2,7 +2,7 @@ package ru.rsreu.Babaian.commands;
 
 import lombok.Getter;
 import ru.rsreu.Babaian.ThreadContainer;
-import ru.rsreu.Babaian.operations.IntegralCalculator;
+import ru.rsreu.Babaian.operations.IntegralCalculatorTolerance;
 
 public class StartCommand implements ICommand {
 
@@ -15,7 +15,7 @@ public class StartCommand implements ICommand {
 
     @Override
     public String process() {
-        String name = ThreadContainer.startThread(new IntegralCalculator(this.tolerance));
+        String name = ThreadContainer.startThread(new IntegralCalculatorTolerance(this.tolerance));
         return "Task " + name + " started";
     }
 }
