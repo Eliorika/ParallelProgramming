@@ -1,11 +1,13 @@
 package ru.rsreu.Babaian.operations;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 public class IntegralHolder {
     private volatile double integral = 0;
-    private volatile double progress = 0;
-    private volatile double h = 5;
 
-    private final Object obj = new Object();
+
+    private Object object = new Object();
+
 
     private IntegralHolder(){
         System.out.println("Holder created!");
@@ -20,27 +22,16 @@ public class IntegralHolder {
     }
 
     public void addValue(double val){
-        synchronized (this){
+        synchronized (object){
             this.integral += val;
-            this.notify();
-        }
-
-    }
-
-    public void addProg(double val){
-        synchronized (this){
-            this.progress += val;
-            if (progress > h){
-                System.out.println(progress);
-                h+=5;
-            }
-
+            object.notify();
         }
     }
+
+
 
     public double getIntegral() throws InterruptedException {
-
-        synchronized (obj){
+        synchronized (object){
             while(this.integral == 0.0)
                 this.wait();
             return this.integral;
