@@ -14,6 +14,7 @@ public class IntegralCalculatorTest {
         System.out.println(integralCalculator.calculateIntegralParallel(0, 1, 6));
         System.out.println("Время выполнения: " + integralCalculator.getElapsedTimeSeconds() + " секунд");
     }
+
     @Test
     public void testIntegralCalculatorNoParallel() throws InterruptedException, ExecutionException {
         int maxTask = 6;

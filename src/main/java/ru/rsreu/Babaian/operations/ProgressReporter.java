@@ -7,21 +7,21 @@ public class ProgressReporter {
     private volatile double progress = 0;
     private volatile int h = 5;
 
-    private static class LazyHolder{
-        static final ProgressReporter INSTANCE = new ProgressReporter();
-    }
-
-    public static ProgressReporter getInstance(){
+    public static ProgressReporter getInstance() {
         return ProgressReporter.LazyHolder.INSTANCE;
     }
 
-    public void addProg(double val){
+    public void addProg(double val) {
         LOCK.lock();
         this.progress += val;
-        if (progress > h){
-            System.out.println(h+"%");
-            h+=5;
+        if (progress > h) {
+            System.out.println(h + "%");
+            h += 5;
         }
         LOCK.unlock();
+    }
+
+    private static class LazyHolder {
+        static final ProgressReporter INSTANCE = new ProgressReporter();
     }
 }

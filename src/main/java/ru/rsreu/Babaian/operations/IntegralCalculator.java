@@ -1,6 +1,8 @@
 package ru.rsreu.Babaian.operations;
 
 import lombok.Getter;
+import ru.rsreu.Babaian.synchMech.MyCountDownLatch;
+import ru.rsreu.Babaian.synchMech.MySemaphore;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -8,14 +10,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
 public class IntegralCalculator {
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final MySemaphore semaphore;
     @Getter
     private double elapsedTimeSeconds;
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
-
-    private final Semaphore semaphore;
 
     public IntegralCalculator(int maxTasks) {
-        this.semaphore = new Semaphore(maxTasks);
+        this.semaphore = new MySemaphore(maxTasks);
     }
 
     public double calculateIntegralParallel(double a, double b, int count) throws InterruptedException {
@@ -23,19 +24,19 @@ public class IntegralCalculator {
         long startTime = System.nanoTime();
         double h = (b - a) / n;
         int hn = n / count;
-        double hprog = 100.0/n;
-        TaskAwaitsManager.setCountDownLatch(new CountDownLatch(count));
+        double hprog = 100.0 / n;
+        TaskAwaitsManager.setCountDownLatch(new MyCountDownLatch(count));
         executorService.execute(new TaskAwaitsManager());
 
         for (int i = 0; i < count; i++) {
-            if(i != count-1)
-                calculateIntegralPartFuture(h, i*hn, (i+1)*hn, a, hprog);
+            if (i != count - 1)
+                calculateIntegralPartFuture(h, i * hn, (i + 1) * hn, a, hprog);
             else
-                calculateIntegralPartFuture(h, i*hn, n, a, hprog);
+                calculateIntegralPartFuture(h, i * hn, n, a, hprog);
         }
 
         executorService.shutdown();
-        while (!executorService.isTerminated()){
+        while (!executorService.isTerminated()) {
 
         }
 
@@ -49,29 +50,29 @@ public class IntegralCalculator {
         double sum = 0.0;
         int k = 0;
         int inBorder = 10;
-        double inH = 100.0/(to-from);
+        double inH = 100.0 / (to - from);
         double inProg = 0;
         for (int i = from; i < to; i++) {
             double x = a + i * h;
             sum += Math.sin(x) * x;
             k++;
-            inProg+=inH;
-            if(inProg>=inBorder){
-                ProgressReporter.getInstance().addProg(prog*k);
-                k=0;
-                inBorder+=10;
+            inProg += inH;
+            if (inProg >= inBorder) {
+                ProgressReporter.getInstance().addProg(prog * k);
+                k = 0;
+                inBorder += 10;
             }
         }
-        ProgressReporter.getInstance().addProg(prog*k);
+        ProgressReporter.getInstance().addProg(prog * k);
 
         IntegralHolder.getInstance().addValue(sum);
         TaskAwaitsManager.countEnded(System.nanoTime());
     }
 
 
-    private void calculateIntegralPartFuture(double h, int from, int to, double a, double prog){
+    private void calculateIntegralPartFuture(double h, int from, int to, double a, double prog) {
 
-        executorService.execute(()-> {
+        executorService.execute(() -> {
             try {
                 semaphore.acquire();
                 calculateIntegralPart(h, from, to, a, prog);
@@ -89,7 +90,7 @@ public class IntegralCalculator {
         double sum = 0;
         double h = (b - a) / n;
         int hn = 1073741824 / count;
-        double hprog = 100.0/n;
+        double hprog = 100.0 / n;
 
 
         for (int i = 0; i < n; i++) {
