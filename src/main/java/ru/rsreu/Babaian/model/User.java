@@ -21,7 +21,8 @@ public class User {
     @Getter
     private final Long numId;
     private final Map<Currency, Double> balance = new HashMap<>();
-    private final ArrayList<TradeResult> result = new ArrayList<>();
+    private final ArrayList<TradeResult> trades = new ArrayList<>();
+    private final ArrayList<Order> userOrders = new ArrayList<>();
 
     public Double getBalanceCurrency(Currency currency){
         readLock.lock();
@@ -78,5 +79,38 @@ public class User {
         return res;
     }
 
-    private void addTo()
+    public void addOrder(Order order){
+        writeLock.lock();
+        userOrders.add(order);
+        writeLock.unlock();
+    }
+
+    public ArrayList<Order> getOpenOrders(){
+        readLock.lock();
+        var ls = userOrders;
+        readLock.unlock();
+        return ls;
+    }
+
+    public void addTradeRes(TradeResult tr){
+        writeLock.lock();
+        trades.add(tr);
+        writeLock.unlock();
+    }
+
+    public ArrayList<TradeResult> getTradesResults(){
+        readLock.lock();
+        var ls = trades;
+        readLock.unlock();
+        return ls;
+    }
+
+    public void removeOrder(Order order){
+        writeLock.lock();
+        userOrders.remove(order);
+        writeLock.unlock();
+    }
+
+
+
 }

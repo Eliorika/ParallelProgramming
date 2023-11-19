@@ -58,10 +58,10 @@ public class TestThreadsStockMarketImpl {
         IStockMarket stockMarket = new StockMarketImpl();
         try {
             User user = stockMarket.createUser(1L);
-            Order order1 = stockMarket.createOrder(1l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, true);
+            Order order1 = new Order(1l, user, new CurrencyPair(Currency.DOLLAR, Currency.EURO), 5d, 1d, true);
             Thread th1 = new Thread(() -> stockMarket.createOrder(1l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, true));
 
-            Order order2 = stockMarket.createOrder(2l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, true);
+            Order order2 = new Order(2l, user, new CurrencyPair( Currency.DOLLAR, Currency.EURO), 5d, 1d, true);
             Thread th2 = new Thread(() -> stockMarket.createOrder(2l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, true));
 
             th1.start();
@@ -70,14 +70,14 @@ public class TestThreadsStockMarketImpl {
             th1.join();
             th2.join();
 
-            Assertions.assertEquals(order1, stockMarket.getBuyQueue().toArray()[0]);
-            Assertions.assertEquals(order2, stockMarket.getBuyQueue().toArray()[1]);
+            Assertions.assertEquals(order1, user.getOpenOrders().get(0));
+            Assertions.assertEquals(order2, user.getOpenOrders().get(1));
 
 
-            Order order3 = stockMarket.createOrder(3l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, false);
+            Order order3 = new Order(3l, user,new CurrencyPair(Currency.DOLLAR, Currency.EURO), 5d, 1d, false);
             Thread th3 = new Thread(() -> stockMarket.createOrder(3l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, false));
 
-            Order order4 = stockMarket.createOrder(4l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, false);
+            Order order4 = new Order(4l, user, new CurrencyPair(Currency.DOLLAR, Currency.EURO), 5d, 1d, false);
             Thread th4 = new Thread(() -> stockMarket.createOrder(4l, user, Currency.DOLLAR, Currency.EURO, 5d, 1d, false));
 
             th3.start();
@@ -86,8 +86,8 @@ public class TestThreadsStockMarketImpl {
             th3.join();
             th4.join();
 
-            Assertions.assertEquals(order3, stockMarket.getSellQueue().toArray()[0]);
-            Assertions.assertEquals(order4, stockMarket.getSellQueue().toArray()[1]);
+            Assertions.assertEquals(order3, user.getOpenOrders().get(2));
+            Assertions.assertEquals(order4, user.getOpenOrders().get(3));
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }

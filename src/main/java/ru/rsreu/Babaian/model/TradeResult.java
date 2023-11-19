@@ -8,7 +8,8 @@ import java.util.Date;
 @Getter
 @AllArgsConstructor
 public class TradeResult {
-    private Order order;
+    private Order orderBuyer;
+    private Order orderSeller;
     private double executedQuantity;
     private String message;
     private Date date;

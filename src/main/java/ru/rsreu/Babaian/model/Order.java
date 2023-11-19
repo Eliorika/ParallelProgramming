@@ -30,4 +30,14 @@ public class Order {
         this.status = OrderStatus.PENDING;
     }
 
+    @Override
+    public String toString(){
+        return "id = " + id
+                + "user: " + user.getNumId()
+                + "currency: " + currencyPair.toString()
+                + "quantity: " + quantity
+                + "isBuy: " + isBuy
+                + "status: " + status;
+    }
+
 }

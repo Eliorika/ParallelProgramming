@@ -37,6 +37,7 @@ public class StockMarketImpl implements IStockMarket {
     public Order createOrder(Long id, User user, Currency currencyBase, Currency currencyQuote, Double quantity, Double price, boolean isBuy) {
         CurrencyPair currencyPair = new CurrencyPair(currencyBase, currencyQuote);
         Order order = new Order(id, user, currencyPair, quantity, price, isBuy);
+        user.addOrder(order);
         try {
             if (isBuy) {
                 this.orderQueueHolder.buyOrders.put(order);
@@ -58,14 +59,14 @@ public class StockMarketImpl implements IStockMarket {
         return user.getBalance();
     }
 
-    @Override
-    public BlockingQueue<Order> getBuyQueue() {
-        return this.orderQueueHolder.buyOrders;
-    }
-
-    @Override
-    public BlockingQueue<Order> getSellQueue() {
-        return this.orderQueueHolder.saleOrders;
-    }
+//    @Override
+//    public BlockingQueue<Order> getBuyQueue() {
+//        return this.orderQueueHolder.buyOrders;
+//    }
+//
+//    @Override
+//    public BlockingQueue<Order> getSellQueue() {
+//        return this.orderQueueHolder.saleOrders;
+//    }
 
 }

@@ -22,9 +22,9 @@ public interface IStockMarket {
 
     Map<Currency, Double> getBalance(User user);
 
-    BlockingQueue<Order> getBuyQueue();
+    //BlockingQueue<Order> getBuyQueue();
 
-    BlockingQueue<Order> getSellQueue();
+    //BlockingQueue<Order> getSellQueue();
 
     OrderQueueHolder getOrderQueueHolder();
 

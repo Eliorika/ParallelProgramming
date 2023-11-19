@@ -3,6 +3,7 @@ package ru.rsreu.Babaian.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+
 import ru.rsreu.Babaian.OrderQueueHolder;
 import ru.rsreu.Babaian.model.enums.OrderStatus;
 
@@ -42,8 +43,8 @@ public class ProceedTrade implements Runnable{
         return matchingOrders;
     }
 
-    public  OrderStatus processBuyerOrder(Order order, BlockingQueue<Order> sellOrderQueue) throws InterruptedException {
-        List<Order> matchingOrders = findMatchingOrders(order, sellOrderQueue);
+    public  OrderStatus processBuyerOrder(Order order) throws InterruptedException {
+        List<Order> matchingOrders = findMatchingOrders(order, this.orderQueueHolder.saleOrders);
         if (matchingOrders.isEmpty()) {
             return null;
         }
@@ -63,13 +64,18 @@ public class ProceedTrade implements Runnable{
             // Выполняем сделку и обновляем балансы клиентов
             if(executeTrade(order, matchingOrder, tradeQuantity, tradeAmount)){
                 if(matchingOrder.getQuantity() == tradeQuantity){
-                    sellOrderQueue.remove(matchingOrder);
+                    this.orderQueueHolder.saleOrders.remove(matchingOrder);
+                    matchingOrder.getUser().removeOrder(matchingOrder);
+
                     matchingOrder.setStatus(OrderStatus.FULFILLED);
                 } else {
                     matchingOrder.setQuantity(matchingOrder.getQuantity() - tradeQuantity);
                     matchingOrder.setStatus(OrderStatus.PARTIAL);
                 }
-                orderQueueHolder.results.add(new TradeResult(order, tradeQuantity, "Proceed", new Date()));
+                var tr = new TradeResult(order, matchingOrder, tradeQuantity, "Proceed", new Date());
+                orderQueueHolder.results.add(tr);
+                matchingOrder.getUser().addTradeRes(tr);
+                order.getUser().addTradeRes(tr);
             } else {
                 //orderQueueHolder.results.add(new TradeResult(order, tradeQuantity, "Error", new Date()));
             }
@@ -82,6 +88,7 @@ public class ProceedTrade implements Runnable{
 
 
             if (totalQuantity == 0) {
+
                 order.setStatus(OrderStatus.FULFILLED);
                 orderQueueHolder.buyOrders.remove(order);
                 break;
@@ -137,7 +144,7 @@ public class ProceedTrade implements Runnable{
                 if(Thread.currentThread().isInterrupted()){
                     break;
                 }
-                processBuyerOrder(orderQueueHolder.buyOrders.take(), orderQueueHolder.saleOrders);
+                processBuyerOrder(orderQueueHolder.buyOrders.take());
             }
         } catch (InterruptedException e) {
             //throw new RuntimeException(e);
