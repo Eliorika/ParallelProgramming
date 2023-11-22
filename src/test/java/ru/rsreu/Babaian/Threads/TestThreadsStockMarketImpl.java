@@ -129,6 +129,7 @@ public class TestThreadsStockMarketImpl {
             }));
         }
 
+        long startTime = System.currentTimeMillis();
 
         try {
             Thread thr = new Thread(new ProceedTrade(stockMarket.getOrderQueueHolder()));
@@ -147,7 +148,6 @@ public class TestThreadsStockMarketImpl {
 
             var order = stockMarket.createOrder(1l, allUsers.get(0), Currency.DOLLAR, Currency.EURO, 1d, 1d, true);
             stockMarket.createOrder(3l, allUsers.get(1), Currency.DOLLAR, Currency.EURO, 1d, 1d, false);
-            long startTime = System.currentTimeMillis();
 
 
             //Thread.sleep(10000);
