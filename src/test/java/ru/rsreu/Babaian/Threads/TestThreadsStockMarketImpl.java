@@ -2,22 +2,19 @@ package ru.rsreu.Babaian.Threads;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import ru.rsreu.Babaian.OrderQueueHolder;
 import ru.rsreu.Babaian.api.IStockMarket;
 import ru.rsreu.Babaian.api.impl.StockMarketImpl;
 import ru.rsreu.Babaian.model.CurrencyPair;
 import ru.rsreu.Babaian.model.Order;
-import ru.rsreu.Babaian.model.ProceedTrade;
+import ru.rsreu.Babaian.trade.ProceedTrade;
 import ru.rsreu.Babaian.model.User;
 import ru.rsreu.Babaian.model.enums.Currency;
-import ru.rsreu.Babaian.model.enums.OrderStatus;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-public class TestThreadsStockMarketImpl {
+public class TestThreadsStockMarketImpl{
     @Test
     public void testIncreaseDecreaseBalance() {
         IStockMarket stockMarket = new StockMarketImpl();
@@ -129,9 +126,9 @@ public class TestThreadsStockMarketImpl {
             }));
         }
 
-
+        long startTime = System.currentTimeMillis();
         try {
-            Thread thr = new Thread(new ProceedTrade(stockMarket.getOrderQueueHolder()));
+            Thread thr = new Thread(new ProceedTrade(stockMarket.getOrderHolder()));
             thr.start();
 
             allThIncr.stream().forEach(Thread::start);
@@ -147,18 +144,23 @@ public class TestThreadsStockMarketImpl {
 
             var order = stockMarket.createOrder(1l, allUsers.get(0), Currency.DOLLAR, Currency.EURO, 1d, 1d, true);
             stockMarket.createOrder(3l, allUsers.get(1), Currency.DOLLAR, Currency.EURO, 1d, 1d, false);
-            long startTime = System.currentTimeMillis();
+
 
 
             //Thread.sleep(10000);
             try {
-                while(stockMarket.getOrderQueueHolder().buyOrders.contains(order)) {}
+                while(allUsers.get(0).getOpenOrders().contains(order)) {
+                    stockMarket.createOrder(3l, allUsers.get(1), Currency.DOLLAR, Currency.EURO, 1d, 1d, false);
+                }
+
 
                 thr.interrupt();
                 thr.join();
             } catch (InterruptedException e){
 
             }
+
+            stockMarket.getOrderHolder().getBuyOrders().shutdown();
 
             long endTime = System.currentTimeMillis();
 
@@ -184,7 +186,7 @@ public class TestThreadsStockMarketImpl {
 
             long executionTime = (endTime - startTime) / 1000;
 
-            int s = stockMarket.getOrderQueueHolder().results.size();
+            int s = stockMarket.getOrderHolder().results.size();
             if(executionTime!=0)
                 System.out.println("Average orders/sec: " + s/executionTime);
             else System.out.println("Average orders/sec: " + s);

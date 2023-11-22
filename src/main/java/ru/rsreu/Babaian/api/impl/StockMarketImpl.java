@@ -1,22 +1,21 @@
 package ru.rsreu.Babaian.api.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import ru.rsreu.Babaian.OrderQueueHolder;
+import ru.rsreu.Babaian.OrdersHolder;
 import ru.rsreu.Babaian.api.IStockMarket;
 import ru.rsreu.Babaian.model.CurrencyPair;
 import ru.rsreu.Babaian.model.Order;
+import ru.rsreu.Babaian.model.OrderAvailable;
 import ru.rsreu.Babaian.model.User;
 import ru.rsreu.Babaian.model.enums.Currency;
 import ru.rsreu.Babaian.model.enums.OrderStatus;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 
 public class StockMarketImpl implements IStockMarket {
 
-    @Getter
-    private final OrderQueueHolder orderQueueHolder = new OrderQueueHolder();
+    private final OrdersHolder ordersHolder = new OrdersHolder();
+
     @Override
     public User createUser(Long id) {
         return new User(id);
@@ -38,13 +37,23 @@ public class StockMarketImpl implements IStockMarket {
         CurrencyPair currencyPair = new CurrencyPair(currencyBase, currencyQuote);
         Order order = new Order(id, user, currencyPair, quantity, price, isBuy);
         user.addOrder(order);
-        try {
-            if (isBuy) {
-                this.orderQueueHolder.buyOrders.put(order);
-            } else this.orderQueueHolder.saleOrders.put(order);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        long seq = 0;
+        OrderAvailable or;
+        //while (true) {
+            seq = ordersHolder.getBuyOrders().getRingBuffer().next();
+            or = ordersHolder.getBuyOrders().getRingBuffer().get(seq);
+            if (or.getOrder().getStatus() == OrderStatus.FULFILLED) {
+                or.setOrder(order);
+                //break;
+            }
+        //}
+        this.ordersHolder.getBuyOrders().getRingBuffer().publish(seq);
+
+//            long orid = ordersHolder.getBuyOrders().getRingBuffer().getCursor();
+//            or = ordersHolder.getBuyOrders().getRingBuffer().get(orid);
+//            this.ordersHolder.getBuyOrders().getRingBuffer().publish(orid);
+//            this.ordersHolder.getBuyOrders().getRingBuffer().publish();
+
         return order;
 
     }
@@ -59,14 +68,19 @@ public class StockMarketImpl implements IStockMarket {
         return user.getBalance();
     }
 
+    @Override
+    public OrdersHolder getOrderHolder() {
+        return ordersHolder;
+    }
+
 //    @Override
 //    public BlockingQueue<Order> getBuyQueue() {
-//        return this.orderQueueHolder.buyOrders;
+//        return this.ordersHolder.buyOrders;
 //    }
 //
 //    @Override
 //    public BlockingQueue<Order> getSellQueue() {
-//        return this.orderQueueHolder.saleOrders;
+//        return this.ordersHolder.saleOrders;
 //    }
 
 }

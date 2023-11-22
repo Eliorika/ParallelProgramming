@@ -1,10 +1,14 @@
-package ru.rsreu.Babaian.model;
+package ru.rsreu.Babaian.trade;
 
+import com.lmax.disruptor.EventHandler;
+import com.lmax.disruptor.dsl.Disruptor;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
 
-import ru.rsreu.Babaian.OrderQueueHolder;
+import ru.rsreu.Babaian.OrdersHolder;
+import ru.rsreu.Babaian.model.Order;
+import ru.rsreu.Babaian.model.OrderAvailable;
+import ru.rsreu.Babaian.model.TradeResult;
+import ru.rsreu.Babaian.model.User;
 import ru.rsreu.Babaian.model.enums.OrderStatus;
 
 import java.util.ArrayList;
@@ -14,14 +18,15 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 
 @AllArgsConstructor
-public class ProceedTrade implements Runnable{
+public class ProceedTrade implements Runnable, EventHandler<OrderAvailable> {
     public final ReentrantLock lock = new ReentrantLock();
-    private final OrderQueueHolder orderQueueHolder;
+    private final OrdersHolder ordersHolder;
 
-    private  List<Order> findMatchingOrders(Order order, BlockingQueue<Order> orderQueue){
+    private List<Order> findMatchingOrders(Order order) {
         List<Order> matchingOrders = new ArrayList<>();
-
-        for(Order existingOrder : orderQueue){
+        long sequence = ordersHolder.getBuyOrders().getRingBuffer().getCursor();
+        for (long i = 0; i <= sequence; i++) {
+            var existingOrder = ordersHolder.getBuyOrders().getRingBuffer().get(i).getOrder();
             if (existingOrder != order &&
                     existingOrder.getCurrencyPair().equals(order.getCurrencyPair()) &&
                     existingOrder.isBuy() != order.isBuy() &&
@@ -43,8 +48,8 @@ public class ProceedTrade implements Runnable{
         return matchingOrders;
     }
 
-    public  OrderStatus processBuyerOrder(Order order) throws InterruptedException {
-        List<Order> matchingOrders = findMatchingOrders(order, this.orderQueueHolder.saleOrders);
+    public OrderStatus processBuyerOrder(Order order) throws InterruptedException {
+        List<Order> matchingOrders = findMatchingOrders(order);
         if (matchingOrders.isEmpty()) {
             return null;
         }
@@ -59,12 +64,12 @@ public class ProceedTrade implements Runnable{
 
             double tradeQuantity = Math.min(totalQuantity, availableQuantity);
             Double tradeAmount = order.isBuy() ?
-                    Math.min(availableAmount, totalAmount): Math.max(availableAmount, totalAmount);
+                    Math.min(availableAmount, totalAmount) : Math.max(availableAmount, totalAmount);
 
             // Выполняем сделку и обновляем балансы клиентов
-            if(executeTrade(order, matchingOrder, tradeQuantity, tradeAmount)){
-                if(matchingOrder.getQuantity() == tradeQuantity){
-                    this.orderQueueHolder.saleOrders.remove(matchingOrder);
+            if (executeTrade(order, matchingOrder, tradeQuantity, tradeAmount)) {
+                if (matchingOrder.getQuantity() == tradeQuantity) {
+                    //this.ordersHolder.saleOrders.remove(matchingOrder);
                     matchingOrder.getUser().removeOrder(matchingOrder);
 
                     matchingOrder.setStatus(OrderStatus.FULFILLED);
@@ -73,11 +78,11 @@ public class ProceedTrade implements Runnable{
                     matchingOrder.setStatus(OrderStatus.PARTIAL);
                 }
                 var tr = new TradeResult(order, matchingOrder, tradeQuantity, "Proceed", new Date());
-                orderQueueHolder.results.add(tr);
+                ordersHolder.results.add(tr);
                 matchingOrder.getUser().addTradeRes(tr);
                 order.getUser().addTradeRes(tr);
             } else {
-                //orderQueueHolder.results.add(new TradeResult(order, tradeQuantity, "Error", new Date()));
+                //ordersHolder.results.add(new TradeResult(order, tradeQuantity, "Error", new Date()));
             }
 
             // Обновляем статус ордеров
@@ -90,7 +95,8 @@ public class ProceedTrade implements Runnable{
             if (totalQuantity == 0) {
 
                 order.setStatus(OrderStatus.FULFILLED);
-                orderQueueHolder.buyOrders.remove(order);
+                order.getUser().removeOrder(order);
+                //ordersHolder.buyOrders.remove(order);
                 break;
             }
         }
@@ -104,29 +110,37 @@ public class ProceedTrade implements Runnable{
     }
 
 
-    private  boolean executeTrade(Order order, Order matchingOrder, double quantity, Double tradePrice) {
-        User buyer = order.getUser();
-        User seller = matchingOrder.getUser();
+    private boolean executeTrade(Order order, Order matchingOrder, double quantity, Double tradePrice) {
+        User buyer;
+        User seller;
+        if (order.isBuy()) {
+            buyer = order.getUser();
+            seller = matchingOrder.getUser();
+        } else {
+            seller = order.getUser();
+            buyer = matchingOrder.getUser();
+        }
+
         boolean flag = false;
         lock.lock();
         // Проверка, что у покупателя и продавца достаточно средств и валюты для сделки
-        if (buyer.hasSufficientCurrency(order.getCurrencyPair().getQuoteCurrency(), tradePrice*quantity)
+        if (buyer.hasSufficientCurrency(order.getCurrencyPair().getQuoteCurrency(), tradePrice * quantity)
                 && seller.hasSufficientCurrency(matchingOrder.getCurrencyPair().getBaseCurrency(), quantity)) {
 
             // Учитываем обмен валюты и изменение балансов покупателя и продавца
-            buyer.decreaseBalance(matchingOrder.getCurrencyPair().getQuoteCurrency(), tradePrice*quantity);
-            seller.increaseBalance(matchingOrder.getCurrencyPair().getQuoteCurrency(), tradePrice*quantity);
+            buyer.decreaseBalance(matchingOrder.getCurrencyPair().getQuoteCurrency(), tradePrice * quantity);
+            seller.increaseBalance(matchingOrder.getCurrencyPair().getQuoteCurrency(), tradePrice * quantity);
 
             buyer.increaseBalance(matchingOrder.getCurrencyPair().getBaseCurrency(), quantity);
             seller.decreaseBalance(matchingOrder.getCurrencyPair().getBaseCurrency(), quantity);
 
             // Записываем информацию о сделке, если необходимо
             System.out.println("buyer: " + buyer.getNumId()
-                                +"\nseller: " + seller.getNumId()
-                                +"\nbase currency: " + order.getCurrencyPair().getBaseCurrency()
-                                +"\nquote currency: " + order.getCurrencyPair().getQuoteCurrency()
-                                +"\nquantity: " + quantity
-                                +"\nprice: " + tradePrice +"\n\n");
+                    + "\nseller: " + seller.getNumId()
+                    + "\nbase currency: " + order.getCurrencyPair().getBaseCurrency()
+                    + "\nquote currency: " + order.getCurrencyPair().getQuoteCurrency()
+                    + "\nquantity: " + quantity
+                    + "\nprice: " + tradePrice + "\n\n");
             flag = true;
 
 
@@ -139,15 +153,21 @@ public class ProceedTrade implements Runnable{
 
     @Override
     public void run() {
-        try {
-            while (true) {
-                if(Thread.currentThread().isInterrupted()){
-                    break;
-                }
-                processBuyerOrder(orderQueueHolder.buyOrders.take());
+        this.ordersHolder.getBuyOrders().handleEventsWith(this);
+        this.ordersHolder.getBuyOrders().start();
+        while (true) {
+            if (Thread.currentThread().isInterrupted()) {
+                //this.ordersHolder.getBuyOrders().shutdown();
+                break;
             }
-        } catch (InterruptedException e) {
-            //throw new RuntimeException(e);
+            //processBuyerOrder();
         }
     }
+
+    @Override
+    public void onEvent(OrderAvailable orderAvailable, long l, boolean b) throws Exception {
+        //if (orderAvailable.getOrder().isBuy())
+        processBuyerOrder(orderAvailable.getOrder());
+    }
+
 }

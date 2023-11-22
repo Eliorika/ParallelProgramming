@@ -1,24 +1,18 @@
 package ru.rsreu.Babaian.model;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import ru.rsreu.Babaian.OrderQueueHolder;
 import ru.rsreu.Babaian.model.enums.Currency;
 import ru.rsreu.Babaian.model.enums.OrderStatus;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.BlockingQueue;
-
 @Data
 public class Order {
-    private final Long id;
-    private final User user;
-    private final CurrencyPair currencyPair;
+    private Long id;
+    private User user;
+    private CurrencyPair currencyPair = new CurrencyPair(Currency.DOLLAR, Currency.DOLLAR);
     private Double quantity;
     private Double price;
-    private final boolean isBuy;
-    private OrderStatus status;
+    private boolean isBuy;
+    private OrderStatus status = OrderStatus.FULFILLED;
 
     public Order(Long id, User user, CurrencyPair currencyPair, Double quantity, Double price, boolean isBuy){
         this.id = id;
@@ -30,14 +24,36 @@ public class Order {
         this.status = OrderStatus.PENDING;
     }
 
+    public Order() {
+
+    }
+
     @Override
     public String toString(){
         return "id = " + id
-                + "user: " + user.getNumId()
-                + "currency: " + currencyPair.toString()
-                + "quantity: " + quantity
-                + "isBuy: " + isBuy
-                + "status: " + status;
+                + "\nuser: " + user.getNumId()
+                + "\ncurrency: " + currencyPair.toString()
+                + "\nquantity: " + quantity
+                + "\nisBuy: " + isBuy
+                + "\nstatus: " + status;
+    }
+
+    public boolean equals(Object obj){
+        if (this == obj) {
+            return true;
+        }
+
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+
+        var inOr = (Order) obj;
+
+        if ((inOr.isBuy != this.isBuy) || inOr.status != this.status || !inOr.quantity.equals(this.quantity)
+        || !inOr.currencyPair.equals(this.currencyPair))
+            return false;
+        return true;
+
     }
 
 }

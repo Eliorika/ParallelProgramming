@@ -2,12 +2,11 @@ package ru.rsreu.Babaian.Standard;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import ru.rsreu.Babaian.OrderQueueHolder;
 import ru.rsreu.Babaian.api.IStockMarket;
 import ru.rsreu.Babaian.api.impl.StockMarketImpl;
 import ru.rsreu.Babaian.model.CurrencyPair;
 import ru.rsreu.Babaian.model.Order;
-import ru.rsreu.Babaian.model.ProceedTrade;
+import ru.rsreu.Babaian.trade.ProceedTrade;
 import ru.rsreu.Babaian.model.User;
 import ru.rsreu.Babaian.model.enums.Currency;
 import ru.rsreu.Babaian.model.enums.OrderStatus;
@@ -78,7 +77,7 @@ public class TestStandardStockMarketImpl {
     @Test
     public void testTrade(){
         IStockMarket stockMarket = new StockMarketImpl();
-        ProceedTrade proceedTrade = new ProceedTrade(stockMarket.getOrderQueueHolder());
+        ProceedTrade proceedTrade = new ProceedTrade(stockMarket.getOrderHolder());
         User user1 = stockMarket.createUser(1L);
         Order order1 = stockMarket.createOrder(1l, user1, Currency.DOLLAR, Currency.EURO, 6d, 2d, true);
         stockMarket.increaseBalance(user1, Currency.EURO, 60);

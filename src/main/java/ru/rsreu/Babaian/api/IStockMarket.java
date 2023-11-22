@@ -1,13 +1,11 @@
 package ru.rsreu.Babaian.api;
 
-import ru.rsreu.Babaian.OrderQueueHolder;
-import ru.rsreu.Babaian.model.CurrencyPair;
+import ru.rsreu.Babaian.OrdersHolder;
 import ru.rsreu.Babaian.model.Order;
 import ru.rsreu.Babaian.model.User;
 import ru.rsreu.Babaian.model.enums.Currency;
 
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 
 public interface IStockMarket {
 
@@ -26,6 +24,6 @@ public interface IStockMarket {
 
     //BlockingQueue<Order> getSellQueue();
 
-    OrderQueueHolder getOrderQueueHolder();
+    OrdersHolder getOrderHolder();
 
 }
